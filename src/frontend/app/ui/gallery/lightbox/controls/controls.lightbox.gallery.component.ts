@@ -286,7 +286,8 @@ export class ControlsLightboxComponent implements OnDestroy, OnChanges {
           link.remove();
         }
         break;
-      case 'Escape': // escape
+      case 'x': // close (replaces Escape)
+      case 'X':
         this.closed.emit();
         break;
       case ' ': // space

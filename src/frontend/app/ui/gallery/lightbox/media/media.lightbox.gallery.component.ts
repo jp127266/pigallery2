@@ -109,6 +109,23 @@ export class GalleryLightboxMediaComponent implements OnChanges {
     return this.video.nativeElement.paused;
   }
 
+  // The lightbox fills the screen, so the preview must be sized to the display's
+  // PHYSICAL pixels, not CSS pixels. window.innerWidth/Height are CSS pixels;
+  // on HiDPI/Retina screens (devicePixelRatio > 1) they undercount the real
+  // pixels, so without this scaling the lightbox picks a too-small preview that
+  // the browser upscales (blurry). Cap the ratio to avoid absurdly large fetches.
+  private get renderPixelRatio(): number {
+    return Math.min(window.devicePixelRatio || 1, 3);
+  }
+
+  private get renderWidth(): number {
+    return window.innerWidth * this.renderPixelRatio;
+  }
+
+  private get renderHeight(): number {
+    return window.innerHeight * this.renderPixelRatio;
+  }
+
   private get ThumbnailUrl(): string {
     if (this.gridMedia.isThumbnailAvailable() === true) {
       return this.gridMedia.getThumbnailPath();
@@ -191,7 +208,7 @@ export class GalleryLightboxMediaComponent implements OnChanges {
     this.imageLoadFinished.this = true;
     console.error(
       'Error: cannot load media for lightbox url: ' +
-      this.gridMedia.getBestSizedMediaPath(window.innerWidth, window.innerHeight)
+      this.gridMedia.getBestSizedMediaPath(this.renderWidth, this.renderHeight)
     );
     this.loadNextPhoto();
   }
@@ -237,7 +254,7 @@ export class GalleryLightboxMediaComponent implements OnChanges {
       this.imageLoadFinished.next = true;
       return;
     }
-    this.nextImage.src = this.nextGridMedia.getBestSizedMediaPath(window.innerWidth, window.innerHeight);
+    this.nextImage.src = this.nextGridMedia.getBestSizedMediaPath(this.renderWidth, this.renderHeight);
 
     this.nextImage.onload = () => this.imageLoadFinished.next = true;
     this.nextImage.onerror = () => {
@@ -259,8 +276,8 @@ export class GalleryLightboxMediaComponent implements OnChanges {
       return true;
     }
 
-    const selectedSize = this.gridMedia.getMediaSize(window.innerWidth, window.innerHeight);
-    const minDisplaySize = Math.min(window.innerWidth, window.innerHeight);
+    const selectedSize = this.gridMedia.getMediaSize(this.renderWidth, this.renderHeight);
+    const minDisplaySize = Math.min(this.renderWidth, this.renderHeight);
 
     // If the selected preview size is less than 50% of the minimum display dimension,
     // consider it inadequate for lightbox display (e.g., 240px on a 1080p screen)
@@ -280,7 +297,7 @@ export class GalleryLightboxMediaComponent implements OnChanges {
         // Check if the preview size is adequate for lightbox display
         // If not, load the original instead of a tiny preview
         if (this.isPreviewAdequateForLightbox()) {
-          this.photo.src = this.gridMedia.getBestSizedMediaPath(window.innerWidth, window.innerHeight);
+          this.photo.src = this.gridMedia.getBestSizedMediaPath(this.renderWidth, this.renderHeight);
           this.photo.isBestFit = true;
         } else {
           this.photo.src = this.gridMedia.getOriginalMediaPath();

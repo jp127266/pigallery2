@@ -446,7 +446,8 @@ export class GalleryMapLightboxComponent implements OnChanges, OnDestroy {
           this.fullScreenService.showFullScreen(this.elementRef.nativeElement);
         }
         break;
-      case 'Escape':
+      case 'x': // close (replaces Escape)
+      case 'X':
         this.close();
         break;
     }
