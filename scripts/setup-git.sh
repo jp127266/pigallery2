@@ -7,10 +7,10 @@
 set -e
 cd "$(dirname "$0")/.."
 
-git config filter.strip-config-secrets.clean "scripts/strip-config-secrets.pl"
+git config filter.strip-config-secrets.clean "scripts/strip-config-secrets.py"
 git config filter.strip-config-secrets.smudge cat
 git config core.hooksPath scripts/git-hooks
 
 echo "Enabled:"
-echo "  clean filter  -> config/config.json is committed with sessionSecret emptied"
+echo "  clean filter  -> config/config.json is committed with sessionSecret removed"
 echo "  pre-commit    -> blocks any commit carrying a live secret"

@@ -100,7 +100,9 @@ the `custom-3.5.2` tag in docker-compose.yml to match the new version.
 Nothing secret may enter this repo. Two mechanisms enforce that, both enabled by
 `scripts/setup-git.sh`:
 
-- **Clean filter** ([scripts/strip-config-secrets.pl](scripts/strip-config-secrets.pl)) — `config/config.json` is committed with `sessionSecret` emptied, while the file on disk keeps the real keys. Blanking the live file instead would invalidate every login session on the next restart, and the filter also keeps `git status` quiet, since it normalises both sides of the comparison.
+- **Clean filter** ([scripts/strip-config-secrets.py](scripts/strip-config-secrets.py)) — `config/config.json` is committed with the `sessionSecret` key *removed*, while the file on disk keeps the real keys. Blanking the live file instead would invalidate every login session on the next restart, and the filter also keeps `git status` quiet, since it normalises both sides of the comparison.
+
+  The key must be **absent, not empty**. PiGallery2 generates a secret in its config constructor, before `config.json` is read ([PrivateConfigClass.ts](pigallery2-src/src/common/config/private/PrivateConfigClass.ts)); an explicit `"sessionSecret": []` overwrites that generated value and nothing regenerates it, so `cookie-session` throws `Keys must be provided.` and **every login fails**. Do not "tidy" the filter into emitting an empty array.
 - **Pre-commit hook** ([scripts/git-hooks/pre-commit](scripts/git-hooks/pre-commit)) — inspects staged content and blocks any commit carrying a live `sessionSecret` or a populated `mapboxAccessToken` / `clientSecret` / `password` / `apiKey`. This is the backstop for clones where the filter was never set up.
 
 `db/` and `tmp/` are gitignored: the database holds user password hashes and face

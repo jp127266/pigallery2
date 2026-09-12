@@ -73,9 +73,12 @@ git subtree pull --prefix=pigallery2-src \
 
 ## Secrets
 
-`config/config.json` is versioned, but a git clean filter empties its
+`config/config.json` is versioned, but a git clean filter strips its
 `sessionSecret` before anything is committed, and a pre-commit hook blocks any
-commit that carries a live credential. Both are enabled by `scripts/setup-git.sh`
+commit that carries a live credential. The key is removed rather than emptied:
+PiGallery2 generates a secret at startup, and an explicit empty array would
+overwrite it, leaving the server unable to sign cookies (login fails with
+`Keys must be provided.`). Both are enabled by `scripts/setup-git.sh`
 and are inert until you run it — do that first in every clone.
 
 See [CLAUDE.md](CLAUDE.md) for the fuller operational notes.
