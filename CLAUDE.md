@@ -18,7 +18,9 @@ This directory is a git repo pushed to `git@github.com:jp127266/pigallery2.git`.
 ### After cloning
 
 ```bash
-scripts/setup-git.sh     # REQUIRED: enables the secret filter + pre-commit hook
+scripts/setup-git.sh          # REQUIRED: enables the secret filter + pre-commit hook
+cp .env.example .env          # then set PHOTOS_DIR for this host
+docker compose up -d          # builds the image on first run, then starts
 ```
 
 Git does not clone filter or hook configuration, so without this the session
@@ -34,11 +36,9 @@ docker compose up -d            # start (or apply compose changes)
 docker compose down             # stop and remove the container
 docker restart pigallery2       # restart in place — REQUIRED after editing config/config.json
 
-# Rebuild the custom image after changing anything in pigallery2-src/
-# (run from this directory; the build context is pigallery2-src, NOT `.` —
-#  a `.` context would ship the multi-GB tmp/ cache to the docker daemon)
-docker build -f pigallery2-src/Dockerfile.custom -t pigallery2:custom-3.5.2 pigallery2-src
-docker compose up -d
+# Rebuild the custom image after changing anything in pigallery2-src/.
+# compose builds it automatically when the image is missing; --build forces it.
+docker compose up -d --build
 
 # Observe
 docker ps --filter name=pigallery2          # status / health
@@ -57,10 +57,10 @@ The host directory is bind-mounted into the container (see [docker-compose.yml](
 | `./config` | `/app/data/config` | `config.json` — the single source of truth for settings |
 | `./db` | `/app/data/db` | SQLite databases: `sqlite.db` (gallery index, users, faces) and `jobs.db` |
 | `./tmp` | `/app/data/tmp` | Speed cache: generated thumbnails & screen-sized previews. Safe to delete; will regenerate. |
-| `/home/jp127266/Codes/vripper/download` | `/app/data/images` | Photo originals, mounted **read-only** (`:ro`). PiGallery2 never modifies originals. |
+| `$PHOTOS_DIR` | `/app/data/images` | Photo originals, mounted **read-only** (`:ro`). Set per host in `.env`; defaults to `/home/jp127266/Codes/vripper/download`. |
 | `./pigallery2-src` | *(not mounted)* | Patched PiGallery2 3.5.2 source (git, branch `custom-3.5.2`). Build input for the image only — the container never reads it at runtime. |
 
-Note the photo source is the download output of a sibling `vripper` deployment. Files written by the container (`db/`, `tmp/`) are owned by `root` because the container runs as root — use `sudo`/`docker exec` if you need to manipulate them from the host.
+On this host the photo source is the download output of a sibling `vripper` deployment; elsewhere it is whatever `PHOTOS_DIR` points at. A wrong path fails silently — Docker creates the missing directory and the gallery comes up empty. Files written by the container (`db/`, `tmp/`) are owned by `root` because the container runs as root — use `sudo`/`docker exec` if you need to manipulate them from the host.
 
 ## The custom source
 

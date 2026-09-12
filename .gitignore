@@ -10,3 +10,6 @@ db/
 .vscode/
 *.swp
 .DS_Store
+
+# Host-specific settings (photo path, port). Copy from .env.example.
+.env
