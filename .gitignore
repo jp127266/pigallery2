@@ -1,0 +1,12 @@
+# Speed cache: generated thumbnails & previews. Multi-GB, fully regenerable.
+tmp/
+
+# SQLite databases: gallery index, user accounts (password hashes), face data.
+# Large, constantly-churning binaries containing personal data — never commit.
+db/
+
+# Editor / OS noise
+.idea/
+.vscode/
+*.swp
+.DS_Store

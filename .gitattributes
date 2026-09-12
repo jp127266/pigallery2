@@ -1,0 +1,3 @@
+# Strip runtime session secrets before config.json is stored in git.
+# Requires scripts/setup-git.sh to have been run in this clone.
+config/config.json filter=strip-config-secrets

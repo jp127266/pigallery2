@@ -1,0 +1,24 @@
+name: pigallery2
+
+services:
+  pigallery2:
+    # Custom build of 3.5.2 with local patches, built from ./pigallery2-src
+    # (git branch custom-3.5.2, see pigallery2-src/Dockerfile.custom):
+    #   - lightbox previews sized to physical pixels (no blurry HiDPI previews)
+    #   - lightbox close key changed from Escape to 'x'
+    # Rebuild (from this directory; note the build context is pigallery2-src, NOT .):
+    #   docker build -f pigallery2-src/Dockerfile.custom -t pigallery2:custom-3.5.2 pigallery2-src
+    image: pigallery2:custom-3.5.2
+    container_name: pigallery2
+    environment:
+      - NODE_ENV=production
+    volumes:
+      - ./config:/app/data/config
+      - ./db:/app/data/db
+      # Generated thumbnails / screen-sized previews live here (the speed cache)
+      - ./tmp:/app/data/tmp
+      # Your photos, READ-ONLY (PiGallery2 never modifies originals)
+      - /home/jp127266/Codes/vripper/download:/app/data/images:ro
+    ports:
+      - "8082:80"
+    restart: unless-stopped

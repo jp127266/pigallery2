@@ -1,0 +1,40 @@
+#!/bin/sh
+# Backstop against committing secrets.
+#
+# config/config.json normally passes through the strip-config-secrets clean
+# filter, but a filter only applies where it is configured -- a fresh clone,
+# a different machine, or `git -c filter... ` being bypassed all lose it.
+# This hook inspects what is actually staged, so it catches the leak even
+# when the filter is missing.
+#
+# Install with: scripts/setup-git.sh
+set -e
+
+fail=0
+note() { echo "pre-commit: BLOCKED -- $1" >&2; fail=1; }
+
+for file in $(git diff --cached --name-only --diff-filter=ACM); do
+    staged=$(git show ":$file" 2>/dev/null) || continue
+
+    # A populated sessionSecret array signs login cookies.
+    if printf '%s' "$staged" | grep -qE '"sessionSecret"[[:space:]]*:[[:space:]]*\[[[:space:]]*"'; then
+        note "$file contains a non-empty sessionSecret"
+    fi
+
+    # Credentials the user may fill in later. The "//[key]" doc entries in
+    # config.json have the brackets in the key name, so they do not match.
+    if printf '%s' "$staged" | grep -qE '"(mapboxAccessToken|clientSecret|password|apiKey)"[[:space:]]*:[[:space:]]*"[^"]+"'; then
+        note "$file contains a populated credential field"
+    fi
+done
+
+if [ "$fail" -ne 0 ]; then
+    cat >&2 <<'MSG'
+
+Nothing was committed. Fix the staged content, then retry:
+  - confirm the filter is active:  scripts/setup-git.sh
+  - re-stage the file:             git add config/config.json
+  - verify it is clean:            git show :config/config.json | grep -A2 sessionSecret
+MSG
+    exit 1
+fi
