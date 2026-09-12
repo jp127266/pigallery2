@@ -18,7 +18,6 @@
         },
         "//[reloadClientOnServerUpdate]": "If set the UI will auto reload when client related config changed or the app was restarted (except when the UI shows the settings page).",
         "reloadClientOnServerUpdate": true,
-        "sessionSecret": [],
         "//[sessionTimeout]": "Users kept logged in for this long time.",
         "sessionTimeout": 604800000,
         "//[trustProxy]": "Should the backend trust proxies to extract remote Client IP. See express docs, for valid values: https://expressjs.com/en/guide/behind-proxies.html",
