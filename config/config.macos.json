@@ -23,7 +23,7 @@
         "//[trustProxy]": "Should the backend trust proxies to extract remote Client IP. See express docs, for valid values: https://expressjs.com/en/guide/behind-proxies.html",
         "trustProxy": "false",
         "//[port]": "Port number. Port 80 is usually what you need.",
-        "port": 8082,
+        "port": 6182,
         "//[host]": "Server will accept connections from this IPv6 or IPv4 address.",
         "host": "0.0.0.0",
         "Log": {

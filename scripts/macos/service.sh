@@ -50,7 +50,7 @@ case "${1:-}" in
         launchctl bootout "$DOMAIN/$LABEL" 2>/dev/null || true
         write_plist
         launchctl bootstrap "$DOMAIN" "$PLIST"
-        echo "Started $LABEL -- http://localhost:8082, log: $LOG"
+        echo "Started $LABEL -- http://localhost:6182, log: $LOG"
         ;;
     uninstall)
         launchctl bootout "$DOMAIN/$LABEL" 2>/dev/null || true

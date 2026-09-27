@@ -61,7 +61,7 @@ scripts/macos/build.sh                  # compile into app/ (a few minutes)
 scripts/macos/service.sh install        # start now and at every login
 ```
 
-Then open <http://localhost:8082> and log in with **`admin` / `admin`** —
+Then open <http://localhost:6182> and log in with **`admin` / `admin`** —
 change that password immediately.
 
 ```bash
