@@ -20,3 +20,5 @@ db/
 
 # Native macOS build output (scripts/macos/build.sh).
 app/
+app.new/
+app.old/

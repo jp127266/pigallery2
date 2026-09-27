@@ -123,12 +123,12 @@ Used on the Apple Silicon Mac instead of Docker. Same source, same patches, same
 
 ```bash
 brew install node@22 ffmpeg vips            # node@22: package.json requires >=22 <24
-scripts/macos/build.sh                      # pigallery2-src -> app/ (+ runtime deps, diagnostics)
+scripts/macos/build.sh                      # pigallery2-src -> app/ (+ runtime deps, diagnostics); restarts the service if installed
 scripts/macos/service.sh install            # launchd agent local.pigallery2: starts now and at login, restarts on crash
 scripts/macos/service.sh restart|status|logs|uninstall
 ```
 
-- **Build output is `app/`** (gitignored), deliberately *outside* `pigallery2-src/`. A release left in `pigallery2-src/release` resolves modules from `pigallery2-src/node_modules` too, picking up `ffprobe-static`, whose macOS binary is x86-only and fails to spawn (`Unknown system error -86`). For the same reason the build skips `ffmpeg-static`/`ffprobe-static`; [scripts/macos/env.sh](scripts/macos/env.sh) points `FFMPEG_PATH`/`FFPROBE_PATH` at Homebrew's ffmpeg instead.
+- **Build output is `app/`** (gitignored), deliberately *outside* `pigallery2-src/`. It is built in `app.new/` and swapped in only after the HEIC and diagnostics checks pass, then the service is restarted at once — never delete `app/` under a running server: its lazily loaded modules then fail and the gallery shows broken thumbnails until the page is reloaded. A release left in `pigallery2-src/release` resolves modules from `pigallery2-src/node_modules` too, picking up `ffprobe-static`, whose macOS binary is x86-only and fails to spawn (`Unknown system error -86`). For the same reason the build skips `ffmpeg-static`/`ffprobe-static`; [scripts/macos/env.sh](scripts/macos/env.sh) points `FFMPEG_PATH`/`FFPROBE_PATH` at Homebrew's ffmpeg instead.
 - **Config is [config/config.macos.json](config/config.macos.json)**, not `config/config.json`. It differs in port (6182), data paths, and video encoding. Do not merge the two: the settings page saves the *whole* file, including values given on the command line, so one shared file would get this host's paths written into it and break the other deployment. It gets the same `sessionSecret` clean filter (see `.gitattributes`).
 - **Data paths are CLI overrides** in [scripts/macos/run.sh](scripts/macos/run.sh) (`--Media-folder=<repo>/photos` etc.), computed from the checkout location, so they win over the file and appear read-only in the UI. Photos live in `photos/` (gitignored).
 - **Video transcoding uses VideoToolbox**: `mp4Codec: h264_videotoolbox`, `customInputOptions: ["-hwaccel videotoolbox"]`, `customOutputOptions: ["-q:v 65"]`. The `-q:v` is required, not tuning: PiGallery2 only passes `-b:v` when the source exceeds the bitrate cap, and VideoToolbox ignores `-crf`, so without it the output bitrate is uncontrolled. PiGallery2 always adds `-crf`/`-preset`; VideoToolbox ignores both (a warning, not an error).

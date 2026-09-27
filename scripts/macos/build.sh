@@ -4,7 +4,12 @@
 # The native counterpart of Dockerfile.custom's srcbuild + builder stages: it
 # compiles the patched source and installs the result, with its runtime
 # dependencies, into app/ (gitignored). Re-run after changing anything in
-# pigallery2-src/, then `scripts/macos/service.sh restart`.
+# pigallery2-src/; if the launchd service is installed it is restarted onto
+# the new build at the end.
+#
+# The build happens in app.new/ and replaces app/ only once it has passed its
+# checks, so a running server keeps working throughout, and a failed build
+# leaves the old one in place.
 set -eu
 REPO=$(cd "$(dirname "$0")/../.." && pwd)
 . "$REPO/scripts/macos/env.sh"
@@ -20,9 +25,9 @@ npx gulp create-release --skip-opt-packages=ffmpeg-static,ffprobe-static
 # Move the release out of the source tree. Left in pigallery2-src/release, Node
 # would resolve modules from pigallery2-src/node_modules (the build deps) too --
 # including ffprobe-static, whose macOS binary is x86-only and fails to spawn.
-rm -rf "$REPO/app"
-mv release "$REPO/app"
-cd "$REPO/app"
+rm -rf "$REPO/app.new"
+mv release "$REPO/app.new"
+cd "$REPO/app.new"
 # Compile sharp against Homebrew's libvips rather than using its prebuilt one:
 # the prebuilt libvips has no HEVC decoder, so it cannot read HEIC (only AVIF).
 # Same approach as Dockerfile.custom's builder stage. The build links to the
@@ -62,4 +67,16 @@ node ./src/backend/index --run-diagnostics \
     --Database-dbFolder="$DIAG/db" \
     --Extensions-folder="$DIAG/extensions"
 
+# Swap the new build in and restart onto it straight away: the old process
+# lazily loads modules by path, and those paths now point at the new build.
+cd "$REPO"
+rm -rf app.old
+if [ -d app ]; then mv app app.old; fi
+mv app.new app
+rm -rf app.old
 echo "Built $REPO/app"
+
+if launchctl print "gui/$(id -u)/local.pigallery2" >/dev/null 2>&1; then
+    "$REPO/scripts/macos/service.sh" restart
+    echo "Restarted the service onto the new build"
+fi

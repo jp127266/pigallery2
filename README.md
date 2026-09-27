@@ -69,7 +69,7 @@ scripts/macos/service.sh restart        # apply a config/config.macos.json edit
 scripts/macos/service.sh logs           # follow ~/Library/Logs/pigallery2/pigallery2.log
 scripts/macos/service.sh status
 scripts/macos/service.sh uninstall      # stop and remove the agent
-scripts/macos/build.sh && scripts/macos/service.sh restart   # after editing pigallery2-src/
+scripts/macos/build.sh                  # after editing pigallery2-src/ (restarts the service)
 ```
 
 Settings live in `config/config.macos.json`, not `config/config.json`. The two
