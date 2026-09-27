@@ -9,7 +9,7 @@ A self-hosted **Docker deployment** of PiGallery2 (a photo gallery server), toge
 Two halves live here:
 
 - **Deployment** — `docker-compose.yml`, `config/`, `db/`, `tmp/`: the running service and its state.
-- **Source** — [pigallery2-src/](pigallery2-src/): upstream (https://github.com/bpatrik/pigallery2) at tag `3.5.2` plus local patches, imported as a **git subtree** of this repo. Used only to build the image; it is *not* mounted into the container.
+- **Source** — [pigallery2-src/](pigallery2-src/): upstream (https://github.com/bpatrik/pigallery2) `master` as of 2026-08-11 (3.5.2 + 60 unreleased commits) plus local patches, imported as a **git subtree** of this repo. Used only to build the image; it is *not* mounted into the container.
 
 Everything is orchestrated by [docker-compose.yml](docker-compose.yml). The container is named `pigallery2` and the web UI is published on host port **8082** (mapped to container port 80).
 
@@ -58,19 +58,19 @@ The host directory is bind-mounted into the container (see [docker-compose.yml](
 | `./db` | `/app/data/db` | SQLite databases: `sqlite.db` (gallery index, users, faces) and `jobs.db` |
 | `./tmp` | `/app/data/tmp` | Speed cache: generated thumbnails & screen-sized previews. Safe to delete; will regenerate. |
 | `$PHOTOS_DIR` | `/app/data/images` | Photo originals, mounted **read-only** (`:ro`). Set per host in `.env`; defaults to `/home/jp127266/Codes/vripper/download`. |
-| `./pigallery2-src` | *(not mounted)* | Patched PiGallery2 3.5.2 source (git, branch `custom-3.5.2`). Build input for the image only — the container never reads it at runtime. |
+| `./pigallery2-src` | *(not mounted)* | Patched PiGallery2 source (upstream master, post-3.5.2). Build input for the image only — the container never reads it at runtime. |
 
 On this host the photo source is the download output of a sibling `vripper` deployment; elsewhere it is whatever `PHOTOS_DIR` points at. A wrong path fails silently — Docker creates the missing directory and the gallery comes up empty. Files written by the container (`db/`, `tmp/`) are owned by `root` because the container runs as root — use `sudo`/`docker exec` if you need to manipulate them from the host.
 
 ## The custom source
 
-[pigallery2-src/](pigallery2-src/) is upstream at tag `3.5.2` plus one patch commit. See exactly what is customized with:
+[pigallery2-src/](pigallery2-src/) is upstream `master` (commit `dc456950`, merged 2026-09-27; there has been no release after `3.5.2`) plus local patches. The patches were originally one commit on top of `3.5.2`; see it with:
 
 ```bash
 git diff upstream-3.5.2 custom-3.5.2
 ```
 
-Both are tags in *this* repo. `pigallery2-src/` is a subtree, not a nested repo,
+Both are tags in *this* repo. The image tag `custom-3.5.2` was kept as-is even though the source is now past 3.5.2. `pigallery2-src/` is a subtree, not a nested repo,
 so `git -C pigallery2-src ...` will not work — run git from the repo root.
 Note that those two commits predate the subtree import, so the paths in that
 diff are repo-root relative (`src/frontend/...`) with no `pigallery2-src/` prefix.
@@ -85,12 +85,18 @@ Keep the working tree clean: commit further customizations here rather than leav
 
 ### Upgrading to a newer upstream release
 
-`pigallery2-src/` is a subtree, not a plain copy, so upstream can still be merged in:
+`pigallery2-src/` is a subtree, not a plain copy, so upstream can still be merged in.
+It was imported with full history, so pull **without** `--squash` — git then
+does a real three-way merge against the shared upstream base:
 
 ```bash
 git subtree pull --prefix=pigallery2-src \
-    https://github.com/bpatrik/pigallery2.git 3.6 --squash
+    https://github.com/bpatrik/pigallery2.git master     # or a release tag
 ```
+
+Upstream's own Dockerfile (`docker/alpine/Dockerfile.build`) has since moved to
+Alpine 3.23 without edge repos; `Dockerfile.custom` still uses edge for all
+stages, which is consistent and works — change it only as a whole.
 
 Resolve conflicts in the patched lightbox files, rebuild the image, then bump
 the `custom-3.5.2` tag in docker-compose.yml to match the new version.
