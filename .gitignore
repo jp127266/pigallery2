@@ -15,7 +15,8 @@ db/
 .env
 
 # Photo library for the native macOS deployment (scripts/macos/run.sh).
-photos/
+# No trailing slash: it may be a symlink, which a "photos/" pattern misses.
+/photos
 
 # Native macOS build output (scripts/macos/build.sh).
 app/
