@@ -13,3 +13,9 @@ db/
 
 # Host-specific settings (photo path, port). Copy from .env.example.
 .env
+
+# Photo library for the native macOS deployment (scripts/macos/run.sh).
+photos/
+
+# Native macOS build output (scripts/macos/build.sh).
+app/

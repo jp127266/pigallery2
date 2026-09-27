@@ -49,6 +49,45 @@ docker logs -f pigallery2
 `config/config.json` is not hot-reloaded — restart the container after editing
 it, then hard-refresh the browser (Ctrl+Shift+R).
 
+## Run it natively on macOS (Apple Silicon)
+
+No Docker and no VM: the same patched source runs directly on Node, kept alive
+by a launchd agent. Photos are read from `photos/` in this repo (gitignored).
+
+```bash
+./scripts/setup-git.sh                  # once per clone, as above
+brew install node@22 ffmpeg             # ffmpeg-full also works
+scripts/macos/build.sh                  # compile into app/ (a few minutes)
+scripts/macos/service.sh install        # start now and at every login
+```
+
+Then open <http://localhost:8082> and log in with **`admin` / `admin`** —
+change that password immediately.
+
+```bash
+scripts/macos/service.sh restart        # apply a config/config.macos.json edit
+scripts/macos/service.sh logs           # follow ~/Library/Logs/pigallery2/pigallery2.log
+scripts/macos/service.sh status
+scripts/macos/service.sh uninstall      # stop and remove the agent
+scripts/macos/build.sh && scripts/macos/service.sh restart   # after editing pigallery2-src/
+```
+
+Settings live in `config/config.macos.json`, not `config/config.json`. The two
+hosts need different values (paths, port, video encoder), and the settings page
+saves the whole file, so sharing one file would let a save on one host break
+the other.
+
+Differences from the Docker deployment:
+
+- Video transcoding uses Apple's hardware encoder (`h264_videotoolbox`, with
+  hardware decoding and constant quality `-q:v 65`) — about 6× less CPU than
+  `libx264`. Photo thumbnails are CPU-only either way (sharp/libvips).
+- HEIC photos are not supported: the prebuilt libvips that sharp ships decodes
+  AVIF but not HEVC-based HEIC.
+- The data paths are passed on the command line by `scripts/macos/run.sh`, so
+  they follow wherever the repo is checked out, and show as read-only in the
+  settings page.
+
 ## What is patched
 
 `pigallery2-src/` is upstream 3.5.2 plus one commit, imported as a git subtree:
