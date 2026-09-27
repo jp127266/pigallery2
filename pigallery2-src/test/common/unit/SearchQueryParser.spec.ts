@@ -25,10 +25,110 @@ describe('SearchQueryParser', () => {
   const check = (query: SearchQueryDTO) => {
     const parser = new SearchQueryParser(defaultQueryKeywords);
     expect(parser.parse(parser.stringify(query))).to.deep.equals(query, parser.stringify(query));
-
   };
 
+  const reverseCheck = (query: string) => {
+    const parser = new SearchQueryParser(defaultQueryKeywords);
+    expect(parser.stringify(parser.parse(query))).to.deep.equals(query);
+  };
+  const equalCheck = (q1: string, q2: string) => {
+    const parser = new SearchQueryParser(defaultQueryKeywords);
+    expect(parser.stringify(parser.parse(q1))).to.deep.equals(parser.stringify(parser.parse(q2)));
+  };
+
+
+  describe('should deserialize', () => {
+
+
+    it('Text search', () => {
+      const parser = new SearchQueryParser(defaultQueryKeywords);
+      expect(parser.parse('some_text')).to.deep.equals(
+        {
+          type: SearchQueryTypes.any_text,
+          value: 'some_text'
+        } as TextSearch);
+      expect(parser.parse('any-text:(some text)')).to.deep.equals(
+        {
+          type: SearchQueryTypes.any_text,
+          value: 'some text'
+        } as TextSearch);
+      expect(parser.parse('any-text:(some_text)')).to.deep.equals(
+        {
+          type: SearchQueryTypes.any_text,
+          value: 'some_text'
+        } as TextSearch);
+    });
+  });
+  describe('should serialize', () => {
+
+
+    it('Text search', () => {
+      const parser = new SearchQueryParser(defaultQueryKeywords);
+      expect(parser.stringify({
+        type: SearchQueryTypes.any_text,
+        value: 'some_text'
+      } as TextSearch)).to.deep.equals('some_text');
+      expect(parser.stringify({
+        type: SearchQueryTypes.any_text,
+        value: 'some text'
+      } as TextSearch)).to.deep.equals('any-text:(some text)');
+      expect(parser.stringify({
+        type: SearchQueryTypes.any_text,
+        value: 'some text',
+        matchType: TextSearchQueryMatchTypes.exact_match
+      } as TextSearch)).to.deep.equals('any-text:"some text"');
+    });
+  });
   describe('should serialize and deserialize', () => {
+
+    it('Text search', () => {
+      reverseCheck('some_text');
+
+      reverseCheck('any-text:(some text)');
+      reverseCheck('any-text:"some text"');
+
+      // directories
+      reverseCheck('directory:(some text)');
+      reverseCheck('directory:"some text"');
+      reverseCheck('directory!:(some text)');
+      reverseCheck('directory!:"some text"');
+      reverseCheck('directory~:"some text"');
+      reverseCheck('directory!~:"some text"');
+      reverseCheck('directory~:"*some text"');
+      reverseCheck('directory!~:"*some text"');
+      reverseCheck('directory~:"*some\\* text"');
+      reverseCheck('directory!~:"*some\\* text"');
+
+    });
+
+    it('And search', () => {
+      reverseCheck('directory:(some text) and any-text:(some other)');
+      reverseCheck('directory:(some text) and some and other');
+    });
+
+    it('Or search', () => {
+      reverseCheck('directory:(some text) or any-text:(some other)');
+      equalCheck('directory:(some text) or (some and other)', 'directory:(some text) or (any-text:some and any-text:other)');
+      reverseCheck('directory:(some text) or (some and other)');
+    });
+
+    it('some of search', () => {
+      reverseCheck('some-of:(a d v)');
+      reverseCheck('2-of:(a d v)');
+      reverseCheck('3-of:(a d v)');
+    });
+
+    it('boolean keywords should be case-insensitive', () => {
+      equalCheck('a or b', 'a OR b');
+      equalCheck('a and b', 'a AND b');
+      equalCheck('a or b', 'a Or b');
+      equalCheck('directory:(some text) or any-text:(some other)', 'directory:(some text) OR any-text:(some other)');
+      equalCheck('directory:(some text) and any-text:(some other)', 'directory:(some text) AND any-text:(some other)');
+    });
+
+  });
+
+  describe('should deserialize and serialize', () => {
     it('Text search', () => {
       check({type: SearchQueryTypes.any_text, value: 'test'} as TextSearch);
       check({type: SearchQueryTypes.person, value: 'person_test'} as TextSearch);
@@ -54,6 +154,31 @@ describe('SearchQueryParser', () => {
         matchType: TextSearchQueryMatchTypes.exact_match,
         negate: true,
         value: 'New York'
+      } as TextSearch);
+
+      check({
+        type: SearchQueryTypes.directory,
+        matchType: TextSearchQueryMatchTypes.globMatch,
+        negate: true,
+        value: 'a dir*'
+      } as TextSearch);
+      check({
+        type: SearchQueryTypes.directory,
+        matchType: TextSearchQueryMatchTypes.globMatch,
+        value: '*a dir/test'
+      } as TextSearch);
+
+      check({
+        type: SearchQueryTypes.directory,
+        matchType: TextSearchQueryMatchTypes.globMatch,
+        value: 'a?dir'
+      } as TextSearch);
+
+      check({
+        type: SearchQueryTypes.directory,
+        matchType: TextSearchQueryMatchTypes.globMatch,
+        negate: true,
+        value: 'test/a dir?'
       } as TextSearch);
 
       check({type: SearchQueryTypes.any_text, value: 'test', negate: true} as TextSearch);
@@ -389,6 +514,28 @@ describe('SearchQueryParser', () => {
           {type: SearchQueryTypes.keyword, value: 'big boom'} as TextSearch,
           {type: SearchQueryTypes.caption, value: 'caption'} as TextSearch,
           {type: SearchQueryTypes.position, value: 'New York'} as TextSearch
+        ]
+      } as ANDSearchQuery);
+      check({
+        type: SearchQueryTypes.AND,
+        list: [
+          {type: SearchQueryTypes.keyword, value: 'big boom'} as TextSearch,
+          {type: SearchQueryTypes.caption, value: 'caption'} as TextSearch,
+          {
+            type: SearchQueryTypes.OR,
+            list: [
+              {type: SearchQueryTypes.keyword, value: 'big boom'} as TextSearch,
+              {type: SearchQueryTypes.position, value: 'New York'} as TextSearch,
+              {
+                type: SearchQueryTypes.AND,
+                list: [
+                  {type: SearchQueryTypes.keyword, value: 'big boom'} as TextSearch,
+                  {type: SearchQueryTypes.caption, value: 'caption'} as TextSearch,
+                  {type: SearchQueryTypes.position, value: 'New York'} as TextSearch
+                ]
+              } as ANDSearchQuery
+            ]
+          } as ORSearchQuery
         ]
       } as ANDSearchQuery);
       check({

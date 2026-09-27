@@ -17,13 +17,14 @@ import {DeviceDetectorService} from 'ngx-device-detector';
 import {LoadingBarModule} from '@ngx-loading-bar/core';
 import {IconComponent} from '../../icon.component';
 import {CollapseDirective} from 'ngx-bootstrap/collapse';
-import {JsonPipe, NgFor, NgIf, NgSwitch, NgSwitchCase} from '@angular/common';
+import {NgFor, NgIf, NgSwitch, NgSwitchCase} from '@angular/common';
 import {GallerySearchComponent} from '../gallery/search/search.gallery.component';
 import {GalleryShareComponent} from '../gallery/share/share.gallery.component';
 import {NgIconComponent} from '@ng-icons/core';
 import {FormsModule} from '@angular/forms';
 import {GalleryService} from '../gallery/gallery.service';
 import {UploaderService} from '../gallery/uploader/uploader.service';
+import {SearchQueryUtils} from '../../../../common/SearchQueryUtils';
 
 @Component({
   selector: 'app-frame',
@@ -47,7 +48,6 @@ import {UploaderService} from '../gallery/uploader/uploader.service';
     NgSwitch,
     NgSwitchCase,
     FormsModule,
-    JsonPipe,
   ],
 })
 export class FrameComponent {
@@ -102,6 +102,14 @@ export class FrameComponent {
       Config.Faces.enabled &&
       this.user.value &&
       this.user.value.role >= Config.Faces.readAccessMinRole
+    );
+  }
+
+
+  isGalleryAvailable(): boolean {
+    return (
+      this.user.value &&
+      this.user.value.role >= UserRoles.User
     );
   }
 
@@ -188,5 +196,10 @@ export class FrameComponent {
   scrollUp(): void {
     PageHelper.ScrollY = 0;
   }
+
+  getSearchParams(q: SearchQueryDTO): string {
+    return SearchQueryUtils.urlify(q);
+  }
+
 }
 

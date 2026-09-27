@@ -238,7 +238,11 @@ describe('Authentication middleware', (sqlHelper: DBTestHelper) => {
         expect(err.code).to.be.eql(ErrorCodes.NOT_AUTHORISED);
         done();
       };
-      AuthenticationMWs.authorise(UserRoles.Developer)(req, null, next);
+      AuthenticationMWs.authorise(UserRoles.Developer)(req, {
+        status: () => {
+          // empty
+        }
+      } as any, next);
 
     });
   });
@@ -305,6 +309,37 @@ describe('Authentication middleware', (sqlHelper: DBTestHelper) => {
       });
 
     });
+
+    it('should call next with error if password is empty string', (done: (err?: any) => void) => {
+      const req: any = {
+        body: {
+          loginCredential: {
+            username: 'aa',
+            password: ''
+          }
+        },
+        query: {},
+        params: {}
+      };
+      const testUser = 'test user';
+      const next: any = (err: ErrorDTO) => {
+        try {
+          expect(err).not.to.be.undefined;
+          expect(err.code).to.be.eql(ErrorCodes.INPUT_ERROR);
+          done();
+        } catch (err) {
+          done(err);
+        }
+      };
+      ObjectManagers.getInstance().UserManager = {
+        findOne: (filter: never) => {
+          return Promise.resolve(testUser);
+        }
+      } as any;
+
+      AuthenticationMWs.login(req, null, next);
+    });
+
     it('should call next with error on not finding user', (done: (err?: any) => void) => {
       const req: any = {
         body: {
@@ -379,7 +414,6 @@ describe('Authentication middleware', (sqlHelper: DBTestHelper) => {
         expect(user).to.be.eql(testUser);
         return testContext;
       };
-
 
 
       AuthenticationMWs.login(req, null, next);

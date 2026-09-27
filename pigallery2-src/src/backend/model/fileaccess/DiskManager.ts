@@ -58,6 +58,27 @@ export class DiskManager {
     return path.basename(dirPath);
   }
 
+  private static globToRegex(glob: string): RegExp {
+    const regexStr = '^' + glob
+      .replace(/[.+^${}()|[\]\\]/g, '\\$&') // escape regex special chars (except * and ?)
+      .replace(/\*/g, '.*')                   // * matches any number of any chars
+      .replace(/\?/g, '.') +                  // ? matches exactly one char
+      '$';
+    return new RegExp(regexStr, 'i');
+  }
+
+  public static excludeFile(filename: string): boolean {
+    if (Config.Indexing.excludeFilenameList.length === 0) {
+      return false;
+    }
+    for (const glob of Config.Indexing.excludeFilenameList) {
+      if (DiskManager.globToRegex(glob).test(filename)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   @ExtensionDecorator(e => e.gallery.DiskManager.excludeDir)
   public static async excludeDir(dir: {
     name: string,
@@ -203,6 +224,8 @@ export class DiskManager {
           );
           console.error(err);
         }
+      } else if (DiskManager.excludeFile(file)) {
+        continue;
       } else if (PhotoProcessing.isPhoto(fullFilePath)) {
         try {
           if (settings.noPhoto === true) {
@@ -296,7 +319,7 @@ export class DiskManager {
     directory.cache.mediaCount = directory.media.length;
     // TODO: cache is now calculated purely though DB after indexing of the directory is done.
     // Delete is with caution (double check if it still indeed not used)
-    if (!directory.isPartial) {
+    if (!directory.isPartial && !settings.noMetadata) {
       directory.cache.youngestMedia = Number.MAX_SAFE_INTEGER;
       directory.cache.oldestMedia = Number.MIN_SAFE_INTEGER;
 

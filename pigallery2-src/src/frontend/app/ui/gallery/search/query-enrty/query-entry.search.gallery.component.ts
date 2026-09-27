@@ -128,23 +128,30 @@ export class GallerySearchQueryEntryComponent
       return [];
     }
     if (this.IsTextQuery) {
-      return ['=~', '=', '!=', '!~'];
+      return ['~', '!~', '=', '!=', 'glob', '!glob'];
     }
     return ['=', '!=']; //normal negatable query
   }
 
   get SelectedMatchType(): string {
-    if (this.AsTextQuery.matchType !== TextSearchQueryMatchTypes.like) {
+    if (this.AsTextQuery.matchType === TextSearchQueryMatchTypes.exact_match) {
       if (this.AsTextQuery.negate) {
         return '!=';
       } else {
         return '=';
       }
-    } else {
+    } else if (typeof this.AsTextQuery.matchType === 'undefined' ||
+      this.AsTextQuery.matchType === TextSearchQueryMatchTypes.like) {
       if (this.AsTextQuery.negate) {
         return '!~';
       } else {
-        return '=~';
+        return '~';
+      }
+    } else if (this.AsTextQuery.matchType === TextSearchQueryMatchTypes.globMatch) {
+      if (this.AsTextQuery.negate) {
+        return '!glob';
+      } else {
+        return 'glob';
       }
     }
   }
@@ -157,10 +164,33 @@ export class GallerySearchQueryEntryComponent
     if (!this.IsTextQuery) {
       return;
     }
-    if (value === '!~' || value === '=~') {
+    if (value === '!~' || value === '~') {
       this.AsTextQuery.matchType = TextSearchQueryMatchTypes.like;
-    } else {
+    } else if (value === '!=' || value === '=') {
       this.AsTextQuery.matchType = TextSearchQueryMatchTypes.exact_match;
+    } else if (value === '!glob' || value === 'glob') {
+      this.AsTextQuery.matchType = TextSearchQueryMatchTypes.globMatch;
+    }
+  }
+
+  getMatchingTypesDescription(type: string) {
+    switch (type) {
+      case '=':
+        if (this.IsTextQuery) {
+          return $localize`Exact match (e.g.: bb matches for \' bb \')`;
+        }
+        return $localize`Exact match`;
+      case '!=':
+        return $localize`Exact negative match`;
+      // only supported for text queries
+      case '~':
+        return $localize`Open and start match (e.g.: bb matches for \'abba\' and \' bb \')`;
+      case '!~':
+        return $localize`Negative open and start  match`;
+      case 'glob':
+        return $localize`glob match (supports wildcards: * and ?)`;
+      case '!glob':
+        return $localize`Negative glob match`;
     }
   }
 

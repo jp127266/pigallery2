@@ -2,10 +2,17 @@
 
 ## Intro
 
-This project reached to a point when I cannot maintain it alone. 
-I'm happy to see that some people already submitted some pull requests (PR) so everyone can benefit their changes.
-In general, I'm happy to merge PRs, but I recommend filling a ticket and ask first if it is OK.
+PiGallery2 has grown beyond what one person can maintain alone. Community contributions as extension or pull requests (PRs) are highly welcome!
 
+To keep development organized, please follow our feature workflow and rule of thumb before writing code.
+
+!!! info "Feature Contribution Workflow"
+    1. As an Extension: If possible, implement your new feature entirely as an isolated [extension](extensions.md).
+    2. Improve Extension Support: If the current architecture doesn't support your extension, send a PR to improve extension support first, then add your feature as an extension.
+    3. Consult the Maintainer: If adding extension support is not technically possible, open an issue to consult with the maintainer first before making changes to the core code.
+
+!!! warning "Before Submitting a PR"
+    Always open an issue/ticket first to discuss your planned changes. This ensures your hard work aligns with the project roadmap and can be safely merged!
 
 
 ## How to develop

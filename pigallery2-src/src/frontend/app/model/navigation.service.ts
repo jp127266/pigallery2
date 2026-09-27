@@ -4,6 +4,7 @@ import {IsActiveMatchOptions, Router} from '@angular/router';
 import {ShareService} from '../ui/gallery/share.service';
 import {Config} from '../../../common/config/public/Config';
 import {NavigationLinkTypes} from '../../../common/config/public/ClientConfig';
+import {firstValueFrom} from 'rxjs';
 
 @Injectable()
 export class NavigationService {
@@ -12,19 +13,32 @@ export class NavigationService {
 
   public isLoginPage(): boolean {
     return (
-        this.router.isActive('login',
-            {paths: 'exact', queryParams: 'exact', fragment: 'ignored', matrixParams: 'ignored'} as IsActiveMatchOptions) ||
-        this.router.isActive('shareLogin',
-            {paths: 'exact', queryParams: 'ignored', fragment: 'ignored', matrixParams: 'ignored'} as IsActiveMatchOptions)
+      this.router.isActive('login',
+        {paths: 'exact', queryParams: 'exact', fragment: 'ignored', matrixParams: 'ignored'} as IsActiveMatchOptions) ||
+      this.router.isActive('shareLogin',
+        {paths: 'exact', queryParams: 'ignored', fragment: 'ignored', matrixParams: 'ignored'} as IsActiveMatchOptions)
+    );
+  }
+
+
+  public isErrorPage(): boolean {
+    return (
+      this.router.isActive('error',
+        {paths: 'exact', queryParams: 'exact', fragment: 'ignored', matrixParams: 'ignored'} as IsActiveMatchOptions)
     );
   }
 
   public async toLogin(): Promise<boolean> {
     await this.shareService.wait();
     if (this.shareService.isSharing()) {
-      return this.router.navigate(['shareLogin'], {
-        queryParams: {sk: this.shareService.getSharingKey()},
-      });
+      if ((await firstValueFrom(this.shareService.currentSharing)).passwordProtected === true) {
+        return this.router.navigate(['shareLogin'], {
+          queryParams: {sk: this.shareService.getSharingKey()},
+        });
+      } else {
+        console.error('Navigating to share login without password protection. Something went somewhere off');
+        this.toError();
+      }
     } else {
       return this.router.navigate(['login']);
     }
@@ -33,7 +47,7 @@ export class NavigationService {
   public async toDefault(): Promise<boolean> {
     await this.shareService.wait();
     if (this.shareService.isSharing()) {
-      return this.router.navigate(['share', this.shareService.getSharingKey()]);
+      return this.router.navigate(['/share', this.shareService.getSharingKey()]);
     } else {
       if (Config.Gallery.NavBar.links && Config.Gallery.NavBar.links.length > 0) {
         switch (Config.Gallery.NavBar.links[0].type) {
@@ -65,5 +79,9 @@ export class NavigationService {
 
   public async search(searchText: string): Promise<boolean> {
     return this.router.navigate(['search', searchText]);
+  }
+
+  public async toError(): Promise<boolean> {
+    return this.router.navigate(['error']);
   }
 }

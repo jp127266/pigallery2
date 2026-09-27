@@ -32,6 +32,9 @@ export class AppComponent implements OnInit, OnDestroy {
     this.title.setTitle(Config.Server.applicationTitle);
     await this.shareService.wait();
     this.subscription = this.authenticationService.user.subscribe(() => {
+      if(this.navigation.isErrorPage()){ //stay on the error page, do not auto navigate
+        return;
+      }
       if (this.authenticationService.isAuthenticated()) {
         if (this.navigation.isLoginPage()) {
           return this.navigation.toDefault();

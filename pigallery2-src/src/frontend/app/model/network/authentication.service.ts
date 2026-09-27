@@ -21,21 +21,21 @@ export class AuthenticationService {
   public readonly user: BehaviorSubject<UserDTO>;
 
   constructor(
-      private userService: UserService,
-      private networkService: NetworkService,
-      private shareService: ShareService,
-      private cookieService: CookieService
+    private userService: UserService,
+    networkService: NetworkService,
+    private shareService: ShareService,
+    private cookieService: CookieService
   ) {
     this.user = new BehaviorSubject(null);
 
     // picking up session..
     if (
-        this.isAuthenticated() === false &&
-        this.cookieService.get(CookieNames.session) != null
+      this.isAuthenticated() === false &&
+      this.cookieService.get(CookieNames.session) != null
     ) {
       if (
-          typeof ServerInject !== 'undefined' &&
-          typeof ServerInject.user !== 'undefined'
+        typeof ServerInject !== 'undefined' &&
+        typeof ServerInject.user !== 'undefined'
       ) {
         this.user.next(ServerInject.user);
       }
@@ -99,6 +99,11 @@ export class AuthenticationService {
   public async logout(): Promise<void> {
     await this.userService.logout();
     this.user.next(null);
+    // even on logout try to get sharing user if it's a sharing
+    await this.shareService.wait();
+    if(this.shareService.isSharing()){
+      await this.getSessionUser();
+    }
   }
 
   private async getSessionUser(): Promise<void> {

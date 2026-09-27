@@ -6128,7 +6128,7 @@
           <context context-type="sourcefile">src/frontend/app/ui/gallery/uploader/uploader.gallery.component.html</context>
           <context context-type="linenumber">6</context>
         </context-group>
-        <target>Húzd ide a fájlokat amelyeker felszerenél tölteni</target>
+        <target>Húzd ide a fájlokat a feltöltéshez</target>
       </trans-unit>
       <trans-unit id="4685315655719230241" datatype="html">
         <source>Uploading files</source>
@@ -6144,7 +6144,7 @@
           <context context-type="sourcefile">src/frontend/app/ui/gallery/uploader/uploader.gallery.component.html</context>
           <context context-type="linenumber">32</context>
         </context-group>
-        <target>Hide details</target>
+        <target>Részletek elrejtése</target>
       </trans-unit>
       <trans-unit id="6889473896134264260" datatype="html">
         <source>files</source>

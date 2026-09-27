@@ -5,19 +5,47 @@ export interface SharingDTOKey {
   sharingKey: string;
 }
 
-export interface SharingDTO extends SharingDTOKey {
+export interface BaseSharingDTO extends SharingDTOKey {
   id: number;
+  defaultSearchView?: SearchQueryDTO;
+  defaultDirectoryView?: string;
+  searchQuery: SearchQueryDTO;
+  sharingKey: string;
+  expires: number;
+  timeStamp: number;
+  creator?: UserDTO; // does not travel to client side
+}
+
+
+export interface ResponseSharingDTO extends BaseSharingDTO {
+  id: number;
+  defaultSearchView?: SearchQueryDTO;
+  defaultDirectoryView?: string;
+  searchQuery: SearchQueryDTO;
+  sharingKey: string;
+  expires: number;
+  timeStamp: number;
+  creator?: UserDTO; // does not travel to client side
+  passwordProtected: boolean;
+}
+
+export interface UpdateSharingDTO extends BaseSharingDTO {
+  id: number;
+  defaultSearchView?: SearchQueryDTO;
+  defaultDirectoryView?: string;
   searchQuery: SearchQueryDTO;
   sharingKey: string;
   password?: string;
   expires: number;
   timeStamp: number;
-  creator?: UserDTO;
+  creator?: UserDTO; // does not travel to client side
 }
 
 export interface CreateSharingDTO {
   id?: number;
   password: string;
   valid: number;
+  defaultSearchView?: SearchQueryDTO;
+  defaultDirectoryView?: string;
   searchQuery: SearchQueryDTO;
 }

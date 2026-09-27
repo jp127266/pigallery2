@@ -64,6 +64,7 @@ export const MetadataSearchQueryTypes = [
 export enum TextSearchQueryMatchTypes {
   exact_match = 1,
   like = 2, // default value
+  globMatch = 3, // support for glob * and ? characters. Uses keyword~:"" or !~:"" annotation. !~:() not supported.
 }
 
 export interface SearchQueryDTO {
@@ -96,7 +97,7 @@ export interface SomeOfSearchQuery extends SearchQueryDTO, SearchListQuery {
 
 export interface TextSearch extends NegatableSearchQuery {
   type:
-    | SearchQueryTypes.any_text
+    | SearchQueryTypes.any_text // keyword can be omitted for single word, like match type with any text
     | SearchQueryTypes.person
     | SearchQueryTypes.keyword
     | SearchQueryTypes.position

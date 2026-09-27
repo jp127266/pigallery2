@@ -1,17 +1,20 @@
 import {Column, Entity, ManyToOne, PrimaryGeneratedColumn} from 'typeorm';
-import {SharingDTO} from '../../../../common/entities/SharingDTO';
+import {BaseSharingDTO} from '../../../../common/entities/SharingDTO';
 import {UserEntity} from './UserEntity';
-import {UserDTO} from '../../../../common/entities/UserDTO';
 import {SearchQueryDTO} from '../../../../common/entities/SearchQueryDTO';
 
 @Entity()
-export class SharingEntity implements SharingDTO {
+export class SharingEntity implements BaseSharingDTO {
   @PrimaryGeneratedColumn({unsigned: true})
   id: number;
 
   @Column()
   sharingKey: string;
 
+  /*
+  * This query determines what is available for the user through sharing
+  * Basically it's an allow-list of photos.
+  * */
   @Column({
     type: 'text',
     nullable: false,
@@ -25,6 +28,28 @@ export class SharingEntity implements SharingDTO {
     },
   })
   searchQuery: SearchQueryDTO;
+
+  /**
+   * Only of the defaults should be set at most. If none is set the defaultSearchView will be searchQuery
+   */
+  @Column({
+    type: 'text',
+    nullable: true
+  })
+  defaultDirectoryView: string;
+  @Column({
+    type: 'text',
+    nullable: true,
+    transformer: {
+      from: (val: string) => {
+        return val ? JSON.parse(val) : null;
+      },
+      to: (val: object) => {
+        return val ? JSON.stringify(val) : null;
+      },
+    },
+  })
+  defaultSearchView: SearchQueryDTO;
 
   @Column({type: 'text', nullable: true})
   password: string;

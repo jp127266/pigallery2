@@ -57,7 +57,7 @@
     </div>
   </ng-container>
   <ng-container *ngIf="!IsListQuery">
-    <div class="col-lg-4 col-xl-3">
+    <div class="col-auto">
       <div class="input-group">
         <select
           [id]="'searchType'+id"
@@ -72,11 +72,11 @@
           [id]="'negate'+id"
           [name]="'negate'+id"
           class="form-select w-auto flex-grow-0"
-          title="Negate"
+          title="Matching type"
           i18n-title
           [(ngModel)]="SelectedMatchType"
           (ngModelChange)="onChange()">
-          <option *ngFor="let mt of MatchingTypes" [ngValue]="mt">{{mt}}
+          <option *ngFor="let mt of MatchingTypes" [ngValue]="mt" [title]="getMatchingTypesDescription(mt)">{{mt}}
         </select>
       </div>
     </div>

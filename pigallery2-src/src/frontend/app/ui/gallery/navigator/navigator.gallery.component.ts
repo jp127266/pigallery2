@@ -12,41 +12,41 @@ import {Observable} from 'rxjs';
 import {map} from 'rxjs/operators';
 import {GallerySortingService} from './sorting.service';
 import {PageHelper} from '../../../model/page.helper';
-import { BsDropdownDirective, BsDropdownToggleDirective, BsDropdownMenuDirective } from 'ngx-bootstrap/dropdown';
+import {BsDropdownDirective, BsDropdownMenuDirective, BsDropdownToggleDirective} from 'ngx-bootstrap/dropdown';
 import {FilterService} from '../filter/filter.service';
 import {ContentLoaderService, DirectoryContent} from '../contentLoader.service';
 import {GalleryNavigatorService} from './navigator.service';
 import {GridSizes} from '../../../../../common/entities/GridSizes';
-import { NgIf, NgFor, AsyncPipe } from '@angular/common';
-import { NgIconComponent } from '@ng-icons/core';
-import { SortingMethodIconComponent } from '../../utils/sorting-method-icon/sorting-method-icon.component';
-import { GridSizeIconComponent } from '../../utils/grid-size-icon/grid-size-icon.component';
-import { GalleryFilterComponent } from '../filter/filter.gallery.component';
-import { StringifySortingMethod } from '../../../pipes/StringifySortingMethod';
-import { StringifySearchQuery } from '../../../pipes/StringifySearchQuery';
-import { StringifyGridSize } from '../../../pipes/StringifyGridSize';
+import {AsyncPipe, NgFor, NgIf} from '@angular/common';
+import {NgIconComponent} from '@ng-icons/core';
+import {SortingMethodIconComponent} from '../../utils/sorting-method-icon/sorting-method-icon.component';
+import {GridSizeIconComponent} from '../../utils/grid-size-icon/grid-size-icon.component';
+import {GalleryFilterComponent} from '../filter/filter.gallery.component';
+import {StringifySortingMethod} from '../../../pipes/StringifySortingMethod';
+import {StringifySearchQuery} from '../../../pipes/StringifySearchQuery';
+import {StringifyGridSize} from '../../../pipes/StringifyGridSize';
 import {ContentWrapperWithError} from '../../../../../common/entities/ContentWrapper';
 
 @Component({
-    selector: 'app-gallery-navbar',
-    styleUrls: ['./navigator.gallery.component.css'],
-    templateUrl: './navigator.gallery.component.html',
-    imports: [
-        NgIf,
-        NgFor,
-        RouterLink,
-        NgIconComponent,
-        BsDropdownDirective,
-        BsDropdownToggleDirective,
-        SortingMethodIconComponent,
-        BsDropdownMenuDirective,
-        GridSizeIconComponent,
-        GalleryFilterComponent,
-        AsyncPipe,
-        StringifySortingMethod,
-        StringifySearchQuery,
-        StringifyGridSize,
-    ]
+  selector: 'app-gallery-navbar',
+  styleUrls: ['./navigator.gallery.component.css'],
+  templateUrl: './navigator.gallery.component.html',
+  imports: [
+    NgIf,
+    NgFor,
+    RouterLink,
+    NgIconComponent,
+    BsDropdownDirective,
+    BsDropdownToggleDirective,
+    SortingMethodIconComponent,
+    BsDropdownMenuDirective,
+    GridSizeIconComponent,
+    GalleryFilterComponent,
+    AsyncPipe,
+    StringifySortingMethod,
+    StringifySearchQuery,
+    StringifyGridSize,
+  ]
 })
 export class GalleryNavigatorComponent {
   public readonly sortingByTypes: { key: number; value: string }[] = [];
@@ -59,27 +59,27 @@ export class GalleryNavigatorComponent {
   public directoryContent: Observable<DirectoryContent>;
   public routes: Observable<NavigatorPath[]>;
   public showFilters = false;
+  @ViewChild('dropdown', {static: true}) dropdown: BsDropdownDirective;
+  @ViewChild('navigator', {read: ElementRef}) navigatorElement: ElementRef<HTMLInputElement>;
+  public groupingFollowSorting = true; // if grouping should be set after sorting automatically
+  protected readonly GroupByTypes = GroupByTypes;
   private readonly RootFolderName: string;
   private parentPath: string = null;
-
   private lastScroll = {
     any: 0,
     up: 0,
     down: 0
   };
-  @ViewChild('dropdown', {static: true}) dropdown: BsDropdownDirective;
-  @ViewChild('navigator', {read: ElementRef}) navigatorElement: ElementRef<HTMLInputElement>;
-  public groupingFollowSorting = true; // if grouping should be set after sorting automatically
 
   constructor(
-      public authService: AuthenticationService,
-      public queryService: QueryService,
-      public contentLoaderService: ContentLoaderService,
-      public filterService: FilterService,
-      public sortingService: GallerySortingService,
-      public navigatorService: GalleryNavigatorService,
-      private router: Router,
-      public sanitizer: DomSanitizer
+    public authService: AuthenticationService,
+    public queryService: QueryService,
+    public contentLoaderService: ContentLoaderService,
+    public filterService: FilterService,
+    public sortingService: GallerySortingService,
+    public navigatorService: GalleryNavigatorService,
+    private router: Router,
+    public sanitizer: DomSanitizer
   ) {
     this.sortingByTypes = Utils.enumToArray(SortByTypes);
     // can't group by random
@@ -88,94 +88,86 @@ export class GalleryNavigatorComponent {
     this.RootFolderName = $localize`Home`;
     this.wrappedContent = this.contentLoaderService.content;
     this.directoryContent = this.wrappedContent.pipe(
-        map((c) => (c.directory ? c.directory : c.searchResult))
+      map((c) => (c.directory ? c.directory : c.searchResult))
     );
     this.routes = this.contentLoaderService.content.pipe(
-        map((c) => {
-          this.parentPath = null;
-          if (!c?.directory && !this.isExactDirectorySearch(c)) {
-            return [];
-          }
+      map((c) => {
+        this.parentPath = null;
+        if (!c?.directory && !this.isExactDirectorySearch(c)) {
+          return [];
+        }
 
-          let path: string;
-          let name: string;
-          if (c?.directory) {
-            path = c.directory.path;
-            name = c.directory.name;
+        let path: string;
+        let name: string;
+        if (c?.directory) {
+          path = c.directory.path;
+          name = c.directory.name;
+        } else {
+          // Handle exact directory search
+          const searchQuery = c?.searchResult.searchQuery as TextSearch;
+          path = searchQuery.value.replace(/^\.\//, ''); // Remove leading ./ if present
+          const lastSlashIndex = path.lastIndexOf('/');
+          if (lastSlashIndex !== -1) {
+            name = path.substring(lastSlashIndex + 1);
+            path = path.substring(0, lastSlashIndex);
           } else {
-            // Handle exact directory search
-            const searchQuery = c?.searchResult.searchQuery as TextSearch;
-            path = searchQuery.value.replace(/^\.\//, ''); // Remove leading ./ if present
-            const lastSlashIndex = path.lastIndexOf('/');
-            if (lastSlashIndex !== -1) {
-              name = path.substring(lastSlashIndex + 1);
-              path = path.substring(0, lastSlashIndex);
-            } else {
-              name = path;
-              path = '';
-            }
+            name = path;
+            path = '';
           }
+        }
 
-          path = path.replace(new RegExp('\\\\', 'g'), '/');
-          const dirs = path.split('/');
-          dirs.push(name);
+        path = path.replace(new RegExp('\\\\', 'g'), '/');
+        const dirs = path.split('/');
+        dirs.push(name);
 
-          // removing empty strings
-          for (let i = 0; i < dirs.length; i++) {
-            if (!dirs[i] || 0 === dirs[i].length || '.' === dirs[i]) {
-              dirs.splice(i, 1);
-              i--;
-            }
+        // removing empty strings
+        for (let i = 0; i < dirs.length; i++) {
+          if (!dirs[i] || 0 === dirs[i].length || '.' === dirs[i]) {
+            dirs.splice(i, 1);
+            i--;
           }
+        }
 
-          const user = this.authService.user.value;
-          const arr: NavigatorPath[] = [];
+        const user = this.authService.user.value;
+        const arr: NavigatorPath[] = [];
 
-          // create root link
-          if (dirs.length === 0) {
-            arr.push({name: this.RootFolderName, route: null});
+        // create root link
+        if (dirs.length === 0) {
+          arr.push({name: this.RootFolderName, route: null});
+        } else {
+          arr.push({
+            name: this.RootFolderName,
+            route: user.role > UserRoles.LimitedGuest // it's basically a sharing. they should not just navigate wherever
+              ? '/'
+              : null,
+          });
+        }
+
+        // create rest navigation
+        dirs.forEach((name, index) => {
+          const route = dirs.slice(0, index + 1).join('/');
+          if (dirs.length - 1 === index) {
+            arr.push({name, route: null});
           } else {
             arr.push({
-              name: this.RootFolderName,
+              name,
               route: user.role > UserRoles.LimitedGuest // it's basically a sharing. they should not just navigate wherever
-                  ? '/'
-                  : null,
+                ? route
+                : null,
             });
+
           }
+        });
 
-          // create rest navigation
-          dirs.forEach((name, index) => {
-            const route = dirs.slice(0, index + 1).join('/');
-            if (dirs.length - 1 === index) {
-              arr.push({name, route: null});
-            } else {
-              arr.push({
-                name,
-                route: user.role > UserRoles.LimitedGuest // it's basically a sharing. they should not just navigate wherever
-                    ? route
-                    : null,
-              });
+        // parent directory has a shortcut to navigate to
+        if (arr.length >= 2 && arr[arr.length - 2].route) {
+          this.parentPath = arr[arr.length - 2].route;
+          arr[arr.length - 2].title = $localize`key: alt + up`;
+        }
+        return arr;
 
-            }
-          });
-
-          // parent directory has a shortcut to navigate to
-          if (arr.length >= 2 && arr[arr.length - 2].route) {
-            this.parentPath = arr[arr.length - 2].route;
-            arr[arr.length - 2].title = $localize`key: alt + up`;
-          }
-          return arr;
-
-        })
+      })
     );
-  }
-
-  private isExactDirectorySearch(content: ContentWrapperWithError): boolean {
-    const searchQuery = content?.searchResult?.searchQuery as TextSearch;
-    return !!content?.searchResult &&
-      searchQuery?.type === SearchQueryTypes.directory &&
-      searchQuery?.matchType === TextSearchQueryMatchTypes.exact_match &&
-      !searchQuery?.negate;
   }
 
   get isDirectory(): boolean {
@@ -191,15 +183,15 @@ export class GalleryNavigatorComponent {
   get ItemCount(): number {
     const c = this.contentLoaderService.content.value;
     return c?.directory
-        ? c?.directory.cache?.mediaCount
-        : c?.searchResult
-            ? c?.searchResult?.media?.length
-            : 0;
+      ? c?.directory.cache?.mediaCount
+      : c?.searchResult
+        ? c?.searchResult?.media?.length
+        : 0;
   }
 
   isDefaultSortingAndGrouping(): boolean {
     return this.sortingService.isDefaultSortingAndGrouping(
-        this.contentLoaderService.content.value
+      this.contentLoaderService.content.value
     );
   }
 
@@ -219,8 +211,8 @@ export class GalleryNavigatorComponent {
     this.sortingService.setSorting(s);
     // you cannot group by random
     if (!this.isDirectionalSort(sorting) ||
-        // if grouping is disabled, do not update it
-        this.sortingService.grouping.value.method === GroupByTypes.NoGrouping || !this.groupingFollowSorting
+      // if grouping is disabled, do not update it
+      this.sortingService.grouping.value.method === GroupByTypes.NoGrouping || !this.groupingFollowSorting
     ) {
       return;
     }
@@ -277,11 +269,11 @@ export class GalleryNavigatorComponent {
     });
 
     return Utils.concatUrls(
-        Config.Server.urlBase,
-        Config.Server.apiPath,
-        '/gallery/zip/',
-        encodeURIComponent(JSON.stringify(searchQuery)) +
-        '?' + queryParams
+      Config.Server.urlBase,
+      Config.Server.apiPath,
+      '/gallery/zip/',
+      encodeURIComponent(JSON.stringify(searchQuery)) +
+      '?' + queryParams
     );
   }
 
@@ -292,8 +284,8 @@ export class GalleryNavigatorComponent {
     }
     return JSON.stringify({
       type: SearchQueryTypes.directory,
-      matchType: TextSearchQueryMatchTypes.like,
-      value: Utils.concatUrls('./', c?.directory.path, c?.directory.name),
+      matchType: TextSearchQueryMatchTypes.globMatch,
+      value: Utils.concatUrls('./', c?.directory.path, c?.directory.name) + '*',
     } as TextSearch);
   }
 
@@ -303,8 +295,8 @@ export class GalleryNavigatorComponent {
       return;
     }
     this.router.navigate(['/gallery', this.parentPath],
-        {queryParams: this.queryService.getParams()})
-        .catch(console.error);
+      {queryParams: this.queryService.getParams()})
+      .catch(console.error);
   }
 
   @HostListener('window:keydown', ['$event'])
@@ -335,7 +327,13 @@ export class GalleryNavigatorComponent {
     this.lastScroll.any = scrollPosition;
   }
 
-  protected readonly GroupByTypes = GroupByTypes;
+  private isExactDirectorySearch(content: ContentWrapperWithError): boolean {
+    const searchQuery = content?.searchResult?.searchQuery as TextSearch;
+    return !!content?.searchResult &&
+      searchQuery?.type === SearchQueryTypes.directory &&
+      searchQuery?.matchType === TextSearchQueryMatchTypes.exact_match &&
+      !searchQuery?.negate;
+  }
 }
 
 interface NavigatorPath {

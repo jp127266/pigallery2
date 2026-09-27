@@ -247,8 +247,8 @@ export class PublicRouter {
     app.get('/icon.png', async (req: Request, res: Response, next: NextFunction) => {
       try {
         const p = path.join(ProjectPath.TempFolder, '/icon.png');
-        await PhotoProcessing.renderSVG(Config.Server.svgIcon, p);
-        res.sendFile(p, {
+        const outP = await PhotoProcessing.renderSVG(Config.Server.svgIcon, p);
+        res.sendFile(outP, {
           maxAge: 31536000,
           dotfiles: 'allow',
         });
@@ -260,8 +260,8 @@ export class PublicRouter {
     app.get('/icon_white.png', async (req: Request, res: Response, next: NextFunction) => {
       try {
         const p = path.join(ProjectPath.TempFolder, '/icon_inv.png');
-        await PhotoProcessing.renderSVG(Config.Server.svgIcon, p, 'white');
-        res.sendFile(p, {
+        const outP = await PhotoProcessing.renderSVG(Config.Server.svgIcon, p, 'white');
+        res.sendFile(outP, {
           maxAge: 31536000,
           dotfiles: 'allow',
         });
@@ -269,6 +269,15 @@ export class PublicRouter {
         return next(e);
       }
     });
+
+    app.get(
+      [
+        '/error'
+      ],
+      addTPl, // add template after authentication was successful
+      setLocale,
+      renderIndex
+    );
 
     app.get(
       [
@@ -297,6 +306,7 @@ export class PublicRouter {
           '/' + l + '/share*',
           '/' + l + '/admin',
           '/' + l + '/search*',
+          '/' + l + '/error',
         ],
         redirectToBase(l)
       );

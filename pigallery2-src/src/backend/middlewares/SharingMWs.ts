@@ -1,5 +1,5 @@
 import {NextFunction, Request, Response} from 'express';
-import {CreateSharingDTO, SharingDTO, SharingDTOKey} from '../../common/entities/SharingDTO';
+import {CreateSharingDTO, SharingDTOKey, UpdateSharingDTO} from '../../common/entities/SharingDTO';
 import {ObjectManagers} from '../model/ObjectManagers';
 import {ErrorCodes, ErrorDTO} from '../../common/entities/Error';
 import {Config} from '../../common/config/private/Config';
@@ -8,6 +8,8 @@ import * as path from 'path';
 import {UserRoles} from '../../common/entities/UserDTO';
 import {SearchQueryDTO, SearchQueryTypes, TextSearch, TextSearchQueryMatchTypes} from '../../common/entities/SearchQueryDTO';
 import * as crypto from 'crypto';
+import {SharingEntity} from '../model/database/enitites/SharingEntity';
+import {UserEntity} from '../model/database/enitites/UserEntity';
 
 export class SharingMWs {
   public static async getSharing(
@@ -109,18 +111,27 @@ export class SharingMWs {
         negate: false
       } as TextSearch);
 
-      const sharing: SharingDTO = {
+      const sharing: SharingEntity = {
         id: null,
         sharingKey,
         searchQuery,
         password: createSharing.password,
-        creator: req.session.context?.user,
+        defaultSearchView: null,
+        defaultDirectoryView: null,
+        creator: req.session.context?.user as UserEntity, // only the user id is used
         expires:
           createSharing.valid >= 0 // if === -1 it's forever
             ? Date.now() + createSharing.valid
             : new Date(9999, 0, 1).getTime(), // never expire
         timeStamp: Date.now(),
       };
+
+      if (createSharing.defaultDirectoryView) {
+        sharing.defaultDirectoryView = createSharing.defaultDirectoryView;
+      }
+      if (createSharing.defaultSearchView) {
+        sharing.defaultSearchView = createSharing.defaultSearchView;
+      }
 
       req.resultPipe =
         await ObjectManagers.getInstance().SharingManager.createSharing(
@@ -166,7 +177,7 @@ export class SharingMWs {
         negate: false
       } as TextSearch);
 
-      const sharing: SharingDTO = {
+      const sharing: UpdateSharingDTO = {
         id: updateSharing.id,
         searchQuery,
         sharingKey: '',
@@ -181,6 +192,15 @@ export class SharingMWs {
             : new Date(9999, 0, 1).getTime(), // never expire
         timeStamp: Date.now(),
       };
+
+
+      if (updateSharing.defaultDirectoryView) {
+        sharing.defaultDirectoryView = updateSharing.defaultDirectoryView;
+      }
+      if (updateSharing.defaultSearchView) {
+        sharing.defaultSearchView = updateSharing.defaultSearchView;
+      }
+
 
       const forceUpdate = req.session.context.user.role >= UserRoles.Admin;
       req.resultPipe =
@@ -223,6 +243,7 @@ export class SharingMWs {
       if (req.session.context?.user.role < UserRoles.Admin) {
         const s = await ObjectManagers.getInstance().SharingManager.findOne(sharingKey);
         if (s.creator.id !== req.session.context?.user.id) {
+          res.status(401);
           return next(new ErrorDTO(ErrorCodes.NOT_AUTHORISED, 'Can\'t delete sharing.'));
         }
       }

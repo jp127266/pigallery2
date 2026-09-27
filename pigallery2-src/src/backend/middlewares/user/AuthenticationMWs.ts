@@ -1,6 +1,6 @@
 import {NextFunction, Request, Response} from 'express';
 import {ErrorCodes, ErrorDTO} from '../../../common/entities/Error';
-import {UserDTO, UserRoles,} from '../../../common/entities/UserDTO';
+import {UserRoles,} from '../../../common/entities/UserDTO';
 import {ObjectManagers} from '../../model/ObjectManagers';
 import {Config} from '../../../common/config/private/Config';
 import {PasswordHelper} from '../../model/PasswordHelper';
@@ -20,7 +20,7 @@ export class AuthenticationMWs {
     next: NextFunction
   ): Promise<void> {
     if (Config.Users.authenticationRequired === false) {
-      const user =  ObjectManagers.getInstance().UserManager.getUnAuthenticatedUser();
+      const user = ObjectManagers.getInstance().UserManager.getUnAuthenticatedUser();
       req.session.context = await ObjectManagers.getInstance().SessionManager.buildContext(user);
       return next();
     }
@@ -43,7 +43,7 @@ export class AuthenticationMWs {
     next: NextFunction
   ): Promise<void> {
     if (Config.Users.authenticationRequired === false) {
-      const user =  ObjectManagers.getInstance().UserManager.getUnAuthenticatedUser();
+      const user = ObjectManagers.getInstance().UserManager.getUnAuthenticatedUser();
       req.session.context = await ObjectManagers.getInstance().SessionManager.buildContext(user);
       return next();
     }
@@ -52,31 +52,38 @@ export class AuthenticationMWs {
     if (typeof req.session.context !== 'undefined') {
       // fix context. projectionQuery gets lost in the session between calls
       if (req.session?.context && req.session.context?.user?.projectionKey && (!req.session.context?.projectionQuery || Object.keys(req.session.context?.projectionQuery || {}).length === 0)) {
-          req.session.context = await ObjectManagers.getInstance().SessionManager.buildContext(req.session.context.user);
+        req.session.context = await ObjectManagers.getInstance().SessionManager.buildContext(req.session.context.user);
       }
       // auto extend session if rememberMe is set
       if (req.session.rememberMe) {
         req.sessionOptions.expires = new Date(
           Date.now() + Config.Server.sessionTimeout
         );
+        req.session.expires = req.sessionOptions.expires.getTime();
       }
       return next();
     }
 
+    let user;
     try {
-      const user = await AuthenticationMWs.getSharingUser(req);
-      if (user) {
-        req.session.context = await ObjectManagers.getInstance().SessionManager.buildContext(user);
-        return next();
-      }
+      user = await AuthenticationMWs.getSharingUser(req);
     } catch (err) {
-      return next(new ErrorDTO(ErrorCodes.CREDENTIAL_NOT_FOUND, null, err));
     }
-    if (typeof req.session.context === 'undefined') {
+
+    // no sharing user yet (eg.: its password protected)
+    if (!user) {
       res.status(401);
       return next(
         new ErrorDTO(ErrorCodes.NOT_AUTHENTICATED, 'Not authenticated')
       );
+    }
+
+
+    try {
+      req.session.context = await ObjectManagers.getInstance().SessionManager.buildContext(user);
+    } catch (err) {
+      res.status(500);
+      return next(new ErrorDTO(ErrorCodes.INTERNAL, null, err));
     }
     return next();
   }
@@ -160,6 +167,7 @@ export class AuthenticationMWs {
       next: NextFunction
     ): void {
       if (req.session.context?.user.role < role) {
+        res.status(401);
         return next(new ErrorDTO(ErrorCodes.NOT_AUTHORISED));
       }
       return next();
@@ -241,8 +249,10 @@ export class AuthenticationMWs {
     if (
       typeof req.body === 'undefined' ||
       typeof req.body.loginCredential === 'undefined' ||
-      typeof req.body.loginCredential.username === 'undefined' ||
-      typeof req.body.loginCredential.password === 'undefined'
+      typeof req.body.loginCredential.username !== 'string' ||
+      typeof req.body.loginCredential.password !== 'string' ||
+      req.body.loginCredential.username.length === 0 ||
+      req.body.loginCredential.password.length === 0
     ) {
       Logger.warn(LOG_TAG, 'Failed login from IP `' + req.ip + '` no user or password provided');
       return next(
@@ -267,11 +277,12 @@ export class AuthenticationMWs {
         req.sessionOptions.expires = new Date(
           Date.now() + Config.Server.sessionTimeout
         );
+        req.session.expires = req.sessionOptions.expires.getTime();
       }
       return next();
     } catch (err) {
       Logger.warn(LOG_TAG, 'Failed login from IP `' + req.ip + '` for user:' + req.body.loginCredential.username
-          + ', bad password');
+        + ', bad password');
       return next(
         new ErrorDTO(
           ErrorCodes.CREDENTIAL_NOT_FOUND,
