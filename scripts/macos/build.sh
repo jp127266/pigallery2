@@ -23,9 +23,32 @@ npx gulp create-release --skip-opt-packages=ffmpeg-static,ffprobe-static
 rm -rf "$REPO/app"
 mv release "$REPO/app"
 cd "$REPO/app"
+# Compile sharp against Homebrew's libvips rather than using its prebuilt one:
+# the prebuilt libvips has no HEVC decoder, so it cannot read HEIC (only AVIF).
+# Same approach as Dockerfile.custom's builder stage. The build links to the
+# installed libvips, so re-run this script after `brew upgrade vips`.
+if ! pkg-config --exists vips-cpp; then
+    echo "libvips not found -- run: brew install vips" >&2
+    exit 1
+fi
+export SHARP_FORCE_GLOBAL_LIBVIPS=1
 # No lockfile ships with the release (see gulpfile copy-static-text), so this
 # resolves from package.json -- the same as upstream's Docker build.
-npm install --omit=dev --no-package-lock
+# node-addon-api and node-gyp are only needed for sharp's source build, and are
+# pruned right after.
+npm install --no-package-lock --save-dev node-addon-api@8.5.0 node-gyp@11.5.0
+npm prune --omit=dev
+
+# sharp falls back to its prebuilt binary, with only a log line, when the
+# source build cannot run -- so check the result rather than trusting it.
+node -e '
+const sharp = require("sharp");
+if (!sharp.format.heif.input.fileSuffix.includes(".heic")) {
+    console.error("sharp was not built against Homebrew libvips: no HEIC support");
+    process.exit(1);
+}
+console.log("sharp uses libvips " + sharp.versions.vips + " with HEIC support");
+'
 
 # Same smoke test the Docker build runs: checks sharp, ffmpeg and the DB layer.
 # It gets a throwaway config and data folders so it cannot touch the real ones.

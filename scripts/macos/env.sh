@@ -26,6 +26,7 @@ if [ -z "${FFMPEG_PATH:-}" ]; then
 fi
 
 # launchd starts jobs with a minimal PATH, so set everything explicitly.
-PATH="$NODE_BIN:/usr/bin:/bin:/usr/sbin:/sbin"
+# /opt/homebrew/bin provides pkg-config, which sharp's source build needs.
+PATH="$NODE_BIN:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 NODE_OPTIONS=--max_old_space_size=4096
 export PATH NODE_OPTIONS FFMPEG_PATH FFPROBE_PATH

@@ -56,7 +56,7 @@ by a launchd agent. Photos are read from `photos/` in this repo (gitignored).
 
 ```bash
 ./scripts/setup-git.sh                  # once per clone, as above
-brew install node@22 ffmpeg             # ffmpeg-full also works
+brew install node@22 ffmpeg vips        # ffmpeg-full also works
 scripts/macos/build.sh                  # compile into app/ (a few minutes)
 scripts/macos/service.sh install        # start now and at every login
 ```
@@ -82,8 +82,8 @@ Differences from the Docker deployment:
 - Video transcoding uses Apple's hardware encoder (`h264_videotoolbox`, with
   hardware decoding and constant quality `-q:v 65`) — about 6× less CPU than
   `libx264`. Photo thumbnails are CPU-only either way (sharp/libvips).
-- HEIC photos are not supported: the prebuilt libvips that sharp ships decodes
-  AVIF but not HEVC-based HEIC.
+- sharp is compiled against Homebrew's `vips` (sharp's own prebuilt libvips
+  cannot decode HEIC). Re-run `scripts/macos/build.sh` after `brew upgrade vips`.
 - The data paths are passed on the command line by `scripts/macos/run.sh`, so
   they follow wherever the repo is checked out, and show as read-only in the
   settings page.

@@ -121,7 +121,7 @@ data, and `tmp/` is a multi-GB regenerable cache.
 Used on the Apple Silicon Mac instead of Docker. Same source, same patches, same `db/`/`tmp/` layout; the web UI is on port **6182** (Docker uses 8082).
 
 ```bash
-brew install node@22 ffmpeg                 # node@22: package.json requires >=22 <24
+brew install node@22 ffmpeg vips            # node@22: package.json requires >=22 <24
 scripts/macos/build.sh                      # pigallery2-src -> app/ (+ runtime deps, diagnostics)
 scripts/macos/service.sh install            # launchd agent local.pigallery2: starts now and at login, restarts on crash
 scripts/macos/service.sh restart|status|logs|uninstall
@@ -131,7 +131,7 @@ scripts/macos/service.sh restart|status|logs|uninstall
 - **Config is [config/config.macos.json](config/config.macos.json)**, not `config/config.json`. It differs in port (6182), data paths, and video encoding. Do not merge the two: the settings page saves the *whole* file, including values given on the command line, so one shared file would get this host's paths written into it and break the other deployment. It gets the same `sessionSecret` clean filter (see `.gitattributes`).
 - **Data paths are CLI overrides** in [scripts/macos/run.sh](scripts/macos/run.sh) (`--Media-folder=<repo>/photos` etc.), computed from the checkout location, so they win over the file and appear read-only in the UI. Photos live in `photos/` (gitignored).
 - **Video transcoding uses VideoToolbox**: `mp4Codec: h264_videotoolbox`, `customInputOptions: ["-hwaccel videotoolbox"]`, `customOutputOptions: ["-q:v 65"]`. The `-q:v` is required, not tuning: PiGallery2 only passes `-b:v` when the source exceeds the bitrate cap, and VideoToolbox ignores `-crf`, so without it the output bitrate is uncontrolled. PiGallery2 always adds `-crf`/`-preset`; VideoToolbox ignores both (a warning, not an error).
-- **Photos are CPU-only** (sharp's prebuilt libvips). That libvips cannot decode HEIC (AVIF only) — the HEIF errors in the startup diagnostics are expected.
+- **sharp is built from source against Homebrew's libvips** (`SHARP_FORCE_GLOBAL_LIBVIPS=1`, like the Docker builder stage). sharp's prebuilt libvips has no HEVC decoder, so it reads AVIF but not HEIC. sharp silently falls back to the prebuilt binary when the source build cannot run, so `build.sh` asserts HEIC support at the end — keep that check. The binary links to the installed libvips: **re-run `build.sh` after `brew upgrade vips`**. Photo processing is CPU-only either way.
 - Log: `~/Library/Logs/pigallery2/pigallery2.log` (not rotated).
 
 ## Configuration model
