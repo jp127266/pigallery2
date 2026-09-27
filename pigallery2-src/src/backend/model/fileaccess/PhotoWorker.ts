@@ -5,6 +5,8 @@ import {Logger} from '../../Logger';
 import {FfmpegCommand, FfprobeData} from 'fluent-ffmpeg';
 import {FFmpegFactory} from '../FFmpegFactory';
 import * as path from 'path';
+import * as crypto from 'crypto';
+import {promises as fsp} from 'fs';
 import {ExtensionDecorator} from '../extension/ExtensionDecorator';
 
 
@@ -195,7 +197,18 @@ export class ImageRendererFactory {
       await processedImg.toFormat('webp').toBuffer();
       return;
     }
-    await processedImg.toFile(input.outPath);
-
+    // Render to a temporary file and move it into place only on success. When
+    // decoding fails, sharp still leaves an empty output file behind, and the
+    // thumbnail cache treats any existing file as done -- so that broken
+    // thumbnail would be served forever. The rename also keeps readers from
+    // seeing a half-written file.
+    const tmpPath = input.outPath + '.' + crypto.randomUUID() + '.part';
+    try {
+      await processedImg.toFile(tmpPath);
+      await fsp.rename(tmpPath, input.outPath);
+    } catch (err) {
+      await fsp.rm(tmpPath, {force: true});
+      throw err;
+    }
   }
 }

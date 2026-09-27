@@ -81,6 +81,7 @@ The patches:
 
 - **HiDPI lightbox previews** — [media.lightbox.gallery.component.ts](pigallery2-src/src/frontend/app/ui/gallery/lightbox/media/media.lightbox.gallery.component.ts) requests previews at physical (`devicePixelRatio`-scaled, capped at 3×) pixels instead of CSS pixels, so previews are no longer blurry on HiDPI displays.
 - **Close key `Escape` → `x`** — in both the gallery and map lightbox controls components.
+- **No empty thumbnails on render failure** — [PhotoWorker.ts](pigallery2-src/src/backend/model/fileaccess/PhotoWorker.ts) renders to a `.part` file and renames it into place on success. sharp's `toFile` leaves a 0-byte file when decoding fails, and the thumbnail cache treats any existing file as done, so a single failure (e.g. HEIC before sharp was built against Homebrew libvips) became a permanently blank thumbnail. Stray `.part` files are removed by the Temp Folder Cleaning job.
 - **[Dockerfile.custom](pigallery2-src/Dockerfile.custom)** — adds a `srcbuild` stage that compiles this source (`npm ci`, `tsc`, `gulp create-release`) and feeds it into upstream's alpine build/runtime stages. Its runtime stage deliberately pulls `vips` from the *same* Alpine edge repos as the builder; a mismatch breaks thumbnailing with `vips_colourspace: no known route from 'srgb' to 'last'` (that comment in the file is load-bearing — don't "clean it up").
 
 Keep the working tree clean: commit further customizations here rather than leaving them as uncommitted edits, so a rebuild is always reproducible from a committed state.

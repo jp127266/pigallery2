@@ -99,6 +99,8 @@ git diff upstream-3.5.2 custom-3.5.2
 - Lightbox previews are requested at physical (devicePixelRatio-scaled) pixels,
   so they are not blurry on HiDPI displays.
 - The lightbox close key is `x` instead of `Escape`.
+- A thumbnail that fails to render no longer leaves an empty file in the cache,
+  which PiGallery2 would otherwise serve as a blank thumbnail forever.
 - `Dockerfile.custom` builds the release from source and pins runtime `vips` to
   the same Alpine repos as the builder (an ABI mismatch there breaks
   thumbnailing).
